@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-900 text-gray-100 antialiased;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 text-gray-100;
+  }
+
+  .card {
+    @apply bg-gray-800 rounded-lg border border-gray-700 p-4;
+  }
+
+  .input {
+    @apply bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100
+           placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500
+           focus:border-transparent;
+  }
+
+  .table-row {
+    @apply border-b border-gray-700 hover:bg-gray-800/50 transition-colors;
+  }
+
+  .price-up {
+    @apply text-bullish;
+  }
+
+  .price-down {
+    @apply text-bearish;
+  }
+}
+
+/* Lightweight Charts container styling */
+.chart-container {
+  @apply w-full h-full min-h-[400px] bg-gray-900 rounded-lg;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
