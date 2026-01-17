@@ -31,14 +31,17 @@ build:
 
 test:
 	cd backend && . venv/bin/activate && pytest
-	cd frontend && npm test
+	cd frontend && npm run test
 
 test-backend:
 	cd backend && . venv/bin/activate && pytest -v
 
 lint:
-	cd backend && . venv/bin/activate && ruff check app/
+	cd backend && . venv/bin/activate && ruff check app tests
+	cd backend && . venv/bin/activate && black --check app tests
+	cd backend && . venv/bin/activate && mypy app
 	cd frontend && npm run lint
+	cd frontend && npm run typecheck
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
