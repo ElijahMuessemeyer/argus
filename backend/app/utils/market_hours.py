@@ -1,6 +1,6 @@
 """Market hours detection utilities."""
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 # US Eastern timezone
@@ -50,7 +50,7 @@ def get_next_market_open(dt: datetime | None = None) -> datetime:
     # Find next trading day
     next_day = dt.replace(hour=9, minute=30, second=0, microsecond=0)
     while True:
-        next_day = next_day.replace(day=next_day.day + 1)
+        next_day = next_day + timedelta(days=1)
         if is_trading_day(next_day):
             return next_day
 

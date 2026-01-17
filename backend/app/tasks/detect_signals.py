@@ -21,60 +21,62 @@ async def detect_all_signals() -> None:
     start_time = datetime.utcnow()
     logger.info("Starting signal detection")
 
-    async with AsyncSessionLocal() as db:
-        try:
-            # Get universe
+    try:
+        # Get universe (uses its own session)
+        async with AsyncSessionLocal() as db:
             universe = await UniverseManager.get_universe(db)
 
-            if not universe:
-                logger.warning("No stocks in universe for signal detection")
-                return
+        if not universe:
+            logger.warning("No stocks in universe for signal detection")
+            return
 
-            signals_detected = 0
-            signals_saved = 0
-            errors = 0
+        signals_detected = 0
+        signals_saved = 0
+        errors = 0
 
-            # Process stocks with rate limiting
-            semaphore = asyncio.Semaphore(5)
+        # Process stocks with rate limiting
+        # Each task creates its own session for DB writes
+        semaphore = asyncio.Semaphore(5)
 
-            async def process_stock(stock: dict) -> tuple[int, int]:
-                async with semaphore:
-                    return await detect_signals_for_stock(db, stock["symbol"])
+        async def process_stock(stock: dict) -> tuple[int, int]:
+            async with semaphore:
+                return await detect_signals_for_stock(stock["symbol"])
 
-            tasks = [process_stock(stock) for stock in universe]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        tasks = [process_stock(stock) for stock in universe]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            for result in results:
-                if isinstance(result, Exception):
-                    errors += 1
-                else:
-                    detected, saved = result
-                    signals_detected += detected
-                    signals_saved += saved
+        for result in results:
+            if isinstance(result, Exception):
+                errors += 1
+            else:
+                detected, saved = result
+                signals_detected += detected
+                signals_saved += saved
 
-            duration = (datetime.utcnow() - start_time).total_seconds()
-            logger.info(
-                "Signal detection completed",
-                extra={
-                    "extra_data": {
-                        "stocks_processed": len(universe),
-                        "signals_detected": signals_detected,
-                        "signals_saved": signals_saved,
-                        "errors": errors,
-                        "duration_seconds": round(duration, 2),
-                    }
-                },
-            )
+        duration = (datetime.utcnow() - start_time).total_seconds()
+        logger.info(
+            "Signal detection completed",
+            extra={
+                "extra_data": {
+                    "stocks_processed": len(universe),
+                    "signals_detected": signals_detected,
+                    "signals_saved": signals_saved,
+                    "errors": errors,
+                    "duration_seconds": round(duration, 2),
+                }
+            },
+        )
 
-        except Exception as e:
-            logger.exception(f"Signal detection failed: {e}")
+    except Exception as e:
+        logger.exception(f"Signal detection failed: {e}")
 
 
-async def detect_signals_for_stock(db, symbol: str) -> tuple[int, int]:
+async def detect_signals_for_stock(symbol: str) -> tuple[int, int]:
     """Detect and save signals for a single stock.
 
+    Creates its own database session to avoid concurrent session issues.
+
     Args:
-        db: Database session
         symbol: Stock symbol
 
     Returns:
@@ -99,15 +101,17 @@ async def detect_signals_for_stock(db, symbol: str) -> tuple[int, int]:
         detected = len(signals)
         saved = 0
 
-        # Save signals with deduplication
-        for signal in signals:
-            result = await SignalDetector.save_signal(db, signal)
-            if result:
-                saved += 1
-                logger.info(
-                    f"New signal: {symbol} - {signal.signal_type.value}",
-                    extra={"extra_data": {"symbol": symbol, "signal": signal.model_dump()}},
-                )
+        # Save signals with deduplication - use per-task session
+        if signals:
+            async with AsyncSessionLocal() as db:
+                for signal in signals:
+                    result = await SignalDetector.save_signal(db, signal)
+                    if result:
+                        saved += 1
+                        logger.info(
+                            f"New signal: {symbol} - {signal.signal_type.value}",
+                            extra={"extra_data": {"symbol": symbol, "signal": signal.model_dump()}},
+                        )
 
         return detected, saved
 

@@ -1,5 +1,6 @@
 """Stock data API endpoints."""
 
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_cache, get_market_data
 from app.core.indicators import IndicatorCalculator
-from app.models.stock import Quote, StockInfo, StockData, ChartData, TimeFrame, Period
+from app.models.stock import Quote, StockInfo, StockData, ChartData, TimeFrame, Period, OHLCV
 from app.models.indicator import IndicatorData
 from app.services.cache import CacheService
 from app.services.market_data import MarketDataService
@@ -16,6 +17,16 @@ from app.cache.ttl import CacheTTL
 from app.errors.exceptions import NotFoundError
 
 router = APIRouter()
+
+
+# Period to trading days mapping (approximate)
+PERIOD_DAYS = {
+    Period.THREE_MONTHS: 63,   # ~3 months of trading days
+    Period.SIX_MONTHS: 126,    # ~6 months
+    Period.ONE_YEAR: 252,      # ~1 year
+    Period.TWO_YEARS: 504,     # ~2 years
+    Period.FIVE_YEARS: 1260,   # ~5 years
+}
 
 
 @router.get("/{symbol}", response_model=StockData)
@@ -127,23 +138,24 @@ async def get_stock_chart(
     - **include_macd**: Include MACD indicator
 
     **Returns:**
-    OHLCV data with requested indicators.
+    OHLCV data with requested indicators, filtered to the requested period.
+    Indicators are calculated on full history but sliced to match the period.
     """
     symbol = symbol.upper()
 
-    # Get OHLCV data (need max history for MAs)
-    ohlcv = await market_data.get_ohlcv_for_indicators(symbol, "200W")
+    # Get OHLCV data (need max history for MA calculations)
+    full_ohlcv = await market_data.get_ohlcv_for_indicators(symbol, "200W")
 
-    if not ohlcv:
+    if not full_ohlcv:
         raise NotFoundError("Chart data", symbol)
 
-    # Calculate indicators
+    # Calculate indicators on full history (needed for accurate MA values)
     indicators: dict[str, Any] = {}
 
     if include_ma or include_rsi or include_macd:
         indicator_data = IndicatorCalculator.calculate_all_indicators(
             symbol,
-            ohlcv,
+            full_ohlcv,
             include_ma=include_ma,
             include_rsi=include_rsi,
             include_macd=include_macd,
@@ -165,13 +177,70 @@ async def get_stock_chart(
         if include_macd and indicator_data.macd:
             indicators["macd"] = indicator_data.macd.model_dump()
 
+    # Filter OHLCV to requested period
+    period_days = PERIOD_DAYS.get(period, 252)
+    sliced_ohlcv = full_ohlcv[-period_days:] if len(full_ohlcv) > period_days else full_ohlcv
+
+    # Slice indicator values to match the period
+    for key, value in indicators.items():
+        if "values" in value and isinstance(value["values"], list):
+            value["values"] = value["values"][-len(sliced_ohlcv):]
+
+    # Handle weekly timeframe by resampling
+    if timeframe == TimeFrame.WEEKLY:
+        sliced_ohlcv = _resample_to_weekly(sliced_ohlcv)
+        # Also resample indicator values
+        for key, value in indicators.items():
+            if "values" in value and isinstance(value["values"], list):
+                # Take every 5th value (approximate weekly from daily)
+                value["values"] = value["values"][::5]
+
     return ChartData(
         symbol=symbol,
         timeframe=timeframe,
         period=period,
-        ohlcv=ohlcv,
+        ohlcv=sliced_ohlcv,
         indicators=indicators,
     )
+
+
+def _resample_to_weekly(ohlcv: list[OHLCV]) -> list[OHLCV]:
+    """Resample daily OHLCV data to weekly.
+
+    Groups data by ISO week and aggregates:
+    - open: first day's open
+    - high: max high of the week
+    - low: min low of the week
+    - close: last day's close
+    - volume: sum of daily volumes
+    """
+    if not ohlcv:
+        return []
+
+    weekly: dict[tuple[int, int], list[OHLCV]] = {}
+
+    for bar in ohlcv:
+        iso = bar.timestamp.isocalendar()
+        key = (iso.year, iso.week)
+        if key not in weekly:
+            weekly[key] = []
+        weekly[key].append(bar)
+
+    result = []
+    for key in sorted(weekly.keys()):
+        bars = weekly[key]
+        result.append(
+            OHLCV(
+                timestamp=bars[-1].timestamp,  # Use last day of week
+                open=bars[0].open,
+                high=max(b.high for b in bars),
+                low=min(b.low for b in bars),
+                close=bars[-1].close,
+                volume=sum(b.volume for b in bars),
+            )
+        )
+
+    return result
 
 
 @router.get("/{symbol}/indicators", response_model=IndicatorData)
