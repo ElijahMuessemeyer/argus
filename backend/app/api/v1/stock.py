@@ -143,6 +143,19 @@ async def get_stock_chart(
     """
     symbol = symbol.upper()
 
+    # Check cache
+    cache_key = CacheKeys.chart(
+        symbol=symbol,
+        timeframe=timeframe.value,
+        period=period.value,
+        include_ma=include_ma,
+        include_rsi=include_rsi,
+        include_macd=include_macd,
+    )
+    cached = await cache.get(cache_key)
+    if cached:
+        return ChartData(**cached)
+
     # Get OHLCV data (need max history for MA calculations)
     full_ohlcv = await market_data.get_ohlcv_for_indicators(symbol, "200W")
 
@@ -182,26 +195,68 @@ async def get_stock_chart(
     sliced_ohlcv = full_ohlcv[-period_days:] if len(full_ohlcv) > period_days else full_ohlcv
 
     # Slice indicator values to match the period
-    for key, value in indicators.items():
-        if "values" in value and isinstance(value["values"], list):
-            value["values"] = value["values"][-len(sliced_ohlcv):]
+    indicators = _slice_indicator_payload(indicators, len(sliced_ohlcv))
 
     # Handle weekly timeframe by resampling
     if timeframe == TimeFrame.WEEKLY:
-        sliced_ohlcv = _resample_to_weekly(sliced_ohlcv)
-        # Also resample indicator values
-        for key, value in indicators.items():
-            if "values" in value and isinstance(value["values"], list):
-                # Take every 5th value (approximate weekly from daily)
-                value["values"] = value["values"][::5]
+        weekly_ohlcv = _resample_to_weekly(sliced_ohlcv)
+        indicators = _resample_indicator_payload(indicators, weekly_ohlcv)
+        ohlcv = weekly_ohlcv
+    else:
+        ohlcv = sliced_ohlcv
 
-    return ChartData(
+    chart = ChartData(
         symbol=symbol,
         timeframe=timeframe,
         period=period,
-        ohlcv=sliced_ohlcv,
+        ohlcv=ohlcv,
         indicators=indicators,
     )
+
+    await cache.set(cache_key, chart.model_dump(), CacheTTL.chart())
+
+    return chart
+
+
+def _slice_indicator_payload(
+    indicators: dict[str, Any],
+    length: int,
+) -> dict[str, Any]:
+    """Slice indicator series to match OHLCV length."""
+    if length <= 0:
+        return indicators
+
+    for payload in indicators.values():
+        if isinstance(payload, dict):
+            for field, series in payload.items():
+                if isinstance(series, list):
+                    payload[field] = series[-length:]
+    return indicators
+
+
+def _resample_indicator_payload(
+    indicators: dict[str, Any],
+    weekly_ohlcv: list[OHLCV],
+) -> dict[str, Any]:
+    """Resample indicator series to weekly cadence aligned with OHLCV."""
+    if not weekly_ohlcv:
+        return indicators
+
+    week_keys = []
+    week_dates = []
+    for bar in weekly_ohlcv:
+        iso = bar.timestamp.isocalendar()
+        week_keys.append((iso.year, iso.week))
+        week_dates.append(bar.timestamp)
+
+    for payload in indicators.values():
+        if not isinstance(payload, dict):
+            continue
+        for field, series in payload.items():
+            if isinstance(series, list) and series:
+                payload[field] = _resample_series_to_week(series, week_keys, week_dates)
+
+    return indicators
 
 
 def _resample_to_weekly(ohlcv: list[OHLCV]) -> list[OHLCV]:
@@ -241,6 +296,47 @@ def _resample_to_weekly(ohlcv: list[OHLCV]) -> list[OHLCV]:
         )
 
     return result
+
+
+def _resample_series_to_week(
+    series: list[tuple[Any, Any]],
+    week_keys: list[tuple[int, int]],
+    week_dates: list[datetime],
+) -> list[tuple[datetime, Any]]:
+    """Resample a time series to weekly values aligned to week end dates."""
+    grouped: dict[tuple[int, int], tuple[datetime, Any]] = {}
+
+    for item in series:
+        if not isinstance(item, (list, tuple)) or len(item) < 2:
+            continue
+        ts, value = item[0], item[1]
+        dt = _to_datetime(ts)
+        if dt is None:
+            continue
+        iso = dt.isocalendar()
+        grouped[(iso.year, iso.week)] = (dt, value)
+
+    result: list[tuple[datetime, Any]] = []
+    for key, week_date in zip(week_keys, week_dates):
+        if key in grouped:
+            _, value = grouped[key]
+            result.append((week_date, value))
+        else:
+            result.append((week_date, None))
+
+    return result
+
+
+def _to_datetime(value: Any) -> datetime | None:
+    """Normalize timestamps for indicator resampling."""
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+    return None
 
 
 @router.get("/{symbol}/indicators", response_model=IndicatorData)

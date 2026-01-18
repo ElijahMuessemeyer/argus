@@ -174,11 +174,11 @@ class ScreenerService:
         paginated = sorted_results[request.offset : request.offset + request.limit]
 
         # Cache result
-        from datetime import datetime
+        from datetime import datetime, timezone
         cache_data = {
             "results": [r.model_dump() for r in paginated],
             "total": total,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         await cache_service.set(cache_key, cache_data, CacheTTL.screener())
 

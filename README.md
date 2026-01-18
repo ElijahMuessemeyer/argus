@@ -122,15 +122,21 @@ argus/
 ## Development
 
 ```bash
-# Run tests
+# Run backend + frontend tests
 make test
 
-# Lint code
+# Lint + type-check (Python + TypeScript)
 make lint
 
 # Clean build artifacts
 make clean
 ```
+
+### CI
+
+GitHub Actions runs on every push/PR:
+- Backend: ruff, black, mypy, pytest
+- Frontend: eslint, tsc type-check, vitest
 
 ## License
 

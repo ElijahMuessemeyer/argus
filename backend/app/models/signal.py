@@ -1,6 +1,6 @@
 """Signal-related Pydantic models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 from uuid import UUID, uuid4
@@ -41,13 +41,7 @@ class Signal(BaseModel):
     timestamp: datetime
     price: float
     details: dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            UUID: lambda v: str(v),
-        }
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
     def is_bullish(self) -> bool:

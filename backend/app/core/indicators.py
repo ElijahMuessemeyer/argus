@@ -131,9 +131,13 @@ class IndicatorCalculator:
         avg_gain = gain.rolling(window=period, min_periods=period).mean()
         avg_loss = loss.rolling(window=period, min_periods=period).mean()
 
-        # Avoid division by zero
-        rs = avg_gain / avg_loss.replace(0, np.inf)
+        # Allow division by zero: avg_loss=0 yields RS=inf -> RSI=100
+        rs = avg_gain / avg_loss
         rsi = 100 - (100 / (1 + rs))
+
+        # Flat periods (no gains and no losses) should be neutral
+        flat_mask = (avg_gain == 0) & (avg_loss == 0)
+        rsi = rsi.mask(flat_mask, 50)
 
         return rsi
 
@@ -165,9 +169,9 @@ class IndicatorCalculator:
         return RSIResult(
             period=period,
             values=values,
-            current_value=round(current_rsi, 2) if current_rsi else None,
-            is_overbought=current_rsi > 70 if current_rsi else False,
-            is_oversold=current_rsi < 30 if current_rsi else False,
+            current_value=round(current_rsi, 2) if current_rsi is not None else None,
+            is_overbought=current_rsi > 70 if current_rsi is not None else False,
+            is_oversold=current_rsi < 30 if current_rsi is not None else False,
         )
 
     @staticmethod

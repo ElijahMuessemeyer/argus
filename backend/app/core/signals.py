@@ -1,6 +1,6 @@
 """Signal detection logic."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -246,7 +246,7 @@ class SignalDetector:
             Saved signal or None if duplicate
         """
         # Check for recent duplicate
-        since = datetime.utcnow() - timedelta(hours=dedupe_hours)
+        since = datetime.now(timezone.utc) - timedelta(hours=dedupe_hours)
         result = await db.execute(
             select(SignalRecord).where(
                 and_(
@@ -263,7 +263,7 @@ class SignalDetector:
             return None
 
         # Create new signal
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         signal_record = SignalRecord(
             id=str(uuid4()),
             symbol=signal.symbol,

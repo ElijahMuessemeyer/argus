@@ -99,6 +99,46 @@ class TestRSI:
         assert result.current_value is not None
         assert result.current_value > 50
 
+    def test_rsi_oversold_detection(self):
+        """Test RSI oversold detection."""
+        data = []
+        base = datetime(2024, 1, 1)
+        for i in range(50):
+            data.append(OHLCV(
+                timestamp=base + timedelta(days=i),
+                open=200 - i * 5,
+                high=202 - i * 5,
+                low=195 - i * 5,
+                close=197 - i * 5,
+                volume=1000000,
+            ))
+
+        df = IndicatorCalculator.ohlcv_to_dataframe(data)
+        result = IndicatorCalculator.calculate_rsi_result(df)
+
+        assert result.current_value is not None
+        assert result.current_value < 50
+
+    def test_rsi_flat_series_is_neutral(self):
+        """Test RSI neutral value for flat price series."""
+        data = []
+        base = datetime(2024, 1, 1)
+        for i in range(30):
+            data.append(OHLCV(
+                timestamp=base + timedelta(days=i),
+                open=100,
+                high=100,
+                low=100,
+                close=100,
+                volume=1000000,
+            ))
+
+        df = IndicatorCalculator.ohlcv_to_dataframe(data)
+        result = IndicatorCalculator.calculate_rsi_result(df)
+
+        assert result.current_value is not None
+        assert result.current_value == 50
+
 
 class TestMACD:
     """Tests for MACD calculations."""

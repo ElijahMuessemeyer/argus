@@ -86,11 +86,8 @@ pytest tests/unit/test_indicators.py::TestMovingAverage::test_sma_basic
 ```bash
 cd frontend
 
-# Run tests
-npm test
-
-# Run with coverage
-npm run test:coverage
+# Run tests (Vitest)
+npm run test
 ```
 
 ## Code Quality
@@ -102,10 +99,10 @@ cd backend
 source venv/bin/activate
 
 # Lint
-ruff check app/
+ruff check app tests
 
 # Format
-black app/
+black app tests
 
 # Type check
 mypy app/
@@ -118,6 +115,9 @@ cd frontend
 
 # Lint
 npm run lint
+
+# Type check
+npm run typecheck
 
 # Fix lint issues
 npm run lint -- --fix

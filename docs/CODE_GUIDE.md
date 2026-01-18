@@ -98,7 +98,9 @@ def rsi(prices: pd.Series, period: int = 14) -> pd.Series:
     avg_loss = loss.rolling(window=period, min_periods=period).mean()
 
     # Calculate RS and RSI
-    rs = avg_gain / avg_loss.replace(0, np.inf)  # Avoid division by zero
+    # Note: avg_loss can be 0 for strong uptrends, which yields RSI=100.
+    # Flat periods (no gains or losses) are treated as neutral RSI=50.
+    rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
 
     return rsi

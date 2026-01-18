@@ -460,6 +460,7 @@ Pattern                              Example
 argus:quote:{symbol}                 argus:quote:AAPL
 argus:ohlcv:{symbol}:{tf}:{period}   argus:ohlcv:AAPL:1D:1Y
 argus:indicators:{symbol}:{tf}       argus:indicators:AAPL:1D
+argus:chart:{symbol}:{params_hash}   argus:chart:AAPL:a1b2c3d4
 argus:screener:{filters_hash}        argus:screener:a1b2c3d4
 argus:universe                       argus:universe
 argus:search:{query_hash}            argus:search:e5f6g7h8
@@ -474,6 +475,7 @@ Quotes             5 minutes       1 hour
 OHLCV (daily)      1 hour          1 hour
 OHLCV (weekly)     24 hours        24 hours
 Indicators         5 minutes       1 hour
+Chart data         5 minutes       1 hour
 Screener results   5 minutes       1 hour
 Stock universe     24 hours        24 hours
 Search results     1 hour          1 hour

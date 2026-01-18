@@ -1,6 +1,6 @@
 """Signals API endpoint."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -76,7 +76,7 @@ async def get_signals(
         symbol_list = [s.strip().upper() for s in symbols.split(",")]
 
     # Calculate since timestamp
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
     # Get signals
     signals = await SignalDetector.get_signals(

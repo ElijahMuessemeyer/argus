@@ -26,6 +26,28 @@ class CacheKeys:
         return f"{cls.PREFIX}:indicators:{symbol.upper()}:{timeframe}"
 
     @classmethod
+    def chart(
+        cls,
+        symbol: str,
+        timeframe: str,
+        period: str,
+        include_ma: bool,
+        include_rsi: bool,
+        include_macd: bool,
+    ) -> str:
+        """Cache key for chart data."""
+        params = {
+            "timeframe": timeframe,
+            "period": period,
+            "include_ma": include_ma,
+            "include_rsi": include_rsi,
+            "include_macd": include_macd,
+        }
+        params_str = json.dumps(params, sort_keys=True)
+        params_hash = hashlib.md5(params_str.encode()).hexdigest()[:12]
+        return f"{cls.PREFIX}:chart:{symbol.upper()}:{params_hash}"
+
+    @classmethod
     def screener(cls, filters: dict[str, Any]) -> str:
         """Cache key for screener results."""
         # Create hash of filter parameters for unique key

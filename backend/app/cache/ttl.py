@@ -40,6 +40,11 @@ class CacheTTL:
         return settings.cache_ttl_indicators * cls._get_multiplier()
 
     @classmethod
+    def chart(cls) -> int:
+        """TTL for chart data."""
+        return cls.indicators()
+
+    @classmethod
     def screener(cls) -> int:
         """TTL for screener results."""
         settings = get_settings()

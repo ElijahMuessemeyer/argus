@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for database persistence."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -31,8 +31,12 @@ class StockUniverse(Base):
     market_cap = Column(Integer, nullable=True)
     exchange = Column(String(20), nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class SignalRecord(Base):
@@ -46,7 +50,7 @@ class SignalRecord(Base):
     timestamp = Column(DateTime, nullable=False, index=True)
     price = Column(Numeric(10, 2), nullable=False)
     details = Column(JSON, nullable=False, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         Index("ix_signals_symbol_timestamp", "symbol", "timestamp"),
@@ -60,7 +64,7 @@ class ErrorLog(Base):
     __tablename__ = "error_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     level = Column(String(10), nullable=False)
     component = Column(String(50), nullable=False, index=True)
     message = Column(Text, nullable=False)

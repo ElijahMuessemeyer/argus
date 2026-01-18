@@ -1,7 +1,7 @@
 """Background task for refreshing market data."""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.universe import UniverseManager
 from app.services.market_data import market_data_service
@@ -20,7 +20,7 @@ async def refresh_market_data() -> None:
     This task runs every 5 minutes during market hours.
     It updates quotes and invalidates stale cache entries.
     """
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     logger.info("Starting market data refresh")
 
     async with AsyncSessionLocal() as db:
@@ -65,7 +65,7 @@ async def refresh_market_data() -> None:
             # Invalidate screener cache to force recalculation
             await cache_service.delete_pattern("argus:screener:*")
 
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
             logger.info(
                 f"Market data refresh completed",
                 extra={

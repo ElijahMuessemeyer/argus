@@ -34,9 +34,6 @@ class OHLCV(BaseModel):
     close: float
     volume: int
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
-
 
 class Quote(BaseModel):
     """Real-time stock quote."""
@@ -51,9 +48,6 @@ class Quote(BaseModel):
     high_52w: float | None = None
     low_52w: float | None = None
     updated_at: datetime
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class StockInfo(BaseModel):

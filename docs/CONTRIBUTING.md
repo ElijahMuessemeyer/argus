@@ -11,8 +11,11 @@ This guide is for developers and AI coding agents who want to contribute to or m
 | Run backend | `cd backend && uvicorn app.main:app --reload` |
 | Run frontend | `cd frontend && npm run dev` |
 | Run backend tests | `cd backend && pytest` |
-| Lint backend | `cd backend && ruff check app/` |
+| Run frontend tests | `cd frontend && npm run test` |
+| Lint backend | `cd backend && ruff check app tests` |
+| Type check backend | `cd backend && mypy app` |
 | Lint frontend | `cd frontend && npm run lint` |
+| Type check frontend | `cd frontend && npm run typecheck` |
 
 ---
 
@@ -71,10 +74,10 @@ npm run dev
 
 ```bash
 # Format code
-black app/
+black app tests
 
 # Lint code
-ruff check app/
+ruff check app tests
 
 # Type check
 mypy app/
@@ -159,6 +162,15 @@ async def process_with_limit(self, items: list):
 - **Linter**: ESLint
 
 ```bash
+# Lint
+npm run lint
+
+# Type check
+npm run typecheck
+
+# Run tests (Vitest)
+npm run test
+
 # Lint and fix
 npm run lint -- --fix
 ```
@@ -344,6 +356,11 @@ pytest -x
 
 ### Frontend Tests
 
+```bash
+# Run tests
+npm run test
+```
+
 ```typescript
 // frontend/src/components/__tests__/Button.test.tsx
 
@@ -377,6 +394,8 @@ describe('Button', () => {
 ## Pull Request Checklist
 
 Before submitting changes, verify:
+
+- CI passes (GitHub Actions runs lint, type-check, and tests for backend + frontend)
 
 ### Code Quality
 

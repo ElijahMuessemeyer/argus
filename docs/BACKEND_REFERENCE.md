@@ -766,6 +766,7 @@ from app.cache.keys import CacheKeys
 key = CacheKeys.quote("AAPL")           # "argus:quote:AAPL"
 key = CacheKeys.ohlcv("AAPL", "1D", "1Y") # "argus:ohlcv:AAPL:1D:1Y"
 key = CacheKeys.indicators("AAPL", "1D")  # "argus:indicators:AAPL:1D"
+key = CacheKeys.chart("AAPL", "1D", "1Y", True, False, False)  # "argus:chart:AAPL:a1b2c3d4"
 key = CacheKeys.screener({"ma_filter": "20W"})  # "argus:screener:a1b2c3d4"
 key = CacheKeys.universe()               # "argus:universe"
 key = CacheKeys.stock_info("AAPL")        # "argus:info:AAPL"
@@ -782,6 +783,7 @@ ttl = CacheTTL.quote()        # 300 during market, 3600 off-hours
 ttl = CacheTTL.ohlcv_daily()  # 3600 (always)
 ttl = CacheTTL.ohlcv_weekly() # 86400 (always)
 ttl = CacheTTL.indicators()   # 300 during market, 3600 off-hours
+ttl = CacheTTL.chart()        # 300 during market, 3600 off-hours
 ttl = CacheTTL.screener()     # 300 during market, 3600 off-hours
 ttl = CacheTTL.universe()     # 86400 (always)
 ttl = CacheTTL.stock_info()   # 86400 (always)

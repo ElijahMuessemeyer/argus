@@ -1,6 +1,6 @@
 """Market data service using yfinance."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pandas as pd
@@ -62,7 +62,7 @@ class MarketDataService:
                 market_cap=info.get("marketCap"),
                 high_52w=info.get("fiftyTwoWeekHigh"),
                 low_52w=info.get("fiftyTwoWeekLow"),
-                updated_at=datetime.utcnow(),
+                updated_at=datetime.now(timezone.utc),
             )
         except Exception as e:
             logger.error(f"Error fetching quote for {symbol}: {e}")
@@ -227,7 +227,7 @@ class MarketDataService:
                                 market_cap=info.get("marketCap"),
                                 high_52w=info.get("fiftyTwoWeekHigh"),
                                 low_52w=info.get("fiftyTwoWeekLow"),
-                                updated_at=datetime.utcnow(),
+                            updated_at=datetime.now(timezone.utc),
                             )
                         else:
                             results[symbol.upper()] = None
