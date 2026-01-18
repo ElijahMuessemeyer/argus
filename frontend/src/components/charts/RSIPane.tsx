@@ -7,6 +7,16 @@ interface RSIPaneProps {
   data: RSIResult;
 }
 
+const toChartDate = (value: unknown) => {
+  if (typeof value === 'string') {
+    return value.split('T')[0];
+  }
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  return null;
+};
+
 export function RSIPane({ data }: RSIPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -43,11 +53,16 @@ export function RSIPane({ data }: RSIPaneProps) {
     });
 
     const rsiData: LineData[] = data.values
-      .filter((v): v is [string, number] => v[1] !== null)
-      .map((v) => ({
-        time: v[0].split('T')[0] as string,
-        value: v[1],
-      }));
+      .map((v) => {
+        if (v[1] === null || !Number.isFinite(v[1])) return null;
+        const time = toChartDate(v[0]);
+        if (!time) return null;
+        return {
+          time,
+          value: v[1],
+        } satisfies LineData;
+      })
+      .filter((v): v is LineData => v !== null);
 
     rsiSeries.setData(rsiData);
 

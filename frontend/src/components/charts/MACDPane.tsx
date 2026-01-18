@@ -7,6 +7,16 @@ interface MACDPaneProps {
   data: MACDResult;
 }
 
+const toChartDate = (value: unknown) => {
+  if (typeof value === 'string') {
+    return value.split('T')[0];
+  }
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  return null;
+};
+
 export function MACDPane({ data }: MACDPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -41,12 +51,17 @@ export function MACDPane({ data }: MACDPaneProps) {
     });
 
     const histogramData: HistogramData[] = data.histogram
-      .filter((v): v is [string, number] => v[1] !== null)
-      .map((v) => ({
-        time: v[0].split('T')[0] as string,
-        value: v[1],
-        color: v[1] >= 0 ? CHART_COLORS.macdHistogramUp : CHART_COLORS.macdHistogramDown,
-      }));
+      .map((v) => {
+        if (v[1] === null || !Number.isFinite(v[1])) return null;
+        const time = toChartDate(v[0]);
+        if (!time) return null;
+        return {
+          time,
+          value: v[1],
+          color: v[1] >= 0 ? CHART_COLORS.macdHistogramUp : CHART_COLORS.macdHistogramDown,
+        } satisfies HistogramData;
+      })
+      .filter((v): v is HistogramData => v !== null);
 
     histogramSeries.setData(histogramData);
 
@@ -59,11 +74,16 @@ export function MACDPane({ data }: MACDPaneProps) {
     });
 
     const macdData: LineData[] = data.macd_line
-      .filter((v): v is [string, number] => v[1] !== null)
-      .map((v) => ({
-        time: v[0].split('T')[0] as string,
-        value: v[1],
-      }));
+      .map((v) => {
+        if (v[1] === null || !Number.isFinite(v[1])) return null;
+        const time = toChartDate(v[0]);
+        if (!time) return null;
+        return {
+          time,
+          value: v[1],
+        } satisfies LineData;
+      })
+      .filter((v): v is LineData => v !== null);
 
     macdSeries.setData(macdData);
 
@@ -76,11 +96,16 @@ export function MACDPane({ data }: MACDPaneProps) {
     });
 
     const signalData: LineData[] = data.signal_line
-      .filter((v): v is [string, number] => v[1] !== null)
-      .map((v) => ({
-        time: v[0].split('T')[0] as string,
-        value: v[1],
-      }));
+      .map((v) => {
+        if (v[1] === null || !Number.isFinite(v[1])) return null;
+        const time = toChartDate(v[0]);
+        if (!time) return null;
+        return {
+          time,
+          value: v[1],
+        } satisfies LineData;
+      })
+      .filter((v): v is LineData => v !== null);
 
     signalSeries.setData(signalData);
 

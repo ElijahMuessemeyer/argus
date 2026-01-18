@@ -8,6 +8,16 @@ interface StockChartProps {
   data: ChartData;
 }
 
+const toChartDate = (value: unknown) => {
+  if (typeof value === 'string') {
+    return value.split('T')[0];
+  }
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  return null;
+};
+
 export function StockChart({ data }: StockChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -93,19 +103,31 @@ export function StockChart({ data }: StockChartProps) {
     if (!candleSeriesRef.current || !volumeSeriesRef.current || !data.ohlcv) return;
 
     // Format OHLCV data
-    const candleData: CandlestickData[] = data.ohlcv.map((d) => ({
-      time: d.timestamp.split('T')[0] as string,
-      open: d.open,
-      high: d.high,
-      low: d.low,
-      close: d.close,
-    }));
+    const candleData: CandlestickData[] = data.ohlcv
+      .map((d) => {
+        const time = toChartDate(d.timestamp);
+        if (!time) return null;
+        return {
+          time,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
+        } satisfies CandlestickData;
+      })
+      .filter((d): d is CandlestickData => d !== null);
 
-    const volumeData: HistogramData[] = data.ohlcv.map((d) => ({
-      time: d.timestamp.split('T')[0] as string,
-      value: d.volume,
-      color: d.close >= d.open ? CHART_COLORS.volumeUp : CHART_COLORS.volumeDown,
-    }));
+    const volumeData: HistogramData[] = data.ohlcv
+      .map((d) => {
+        const time = toChartDate(d.timestamp);
+        if (!time) return null;
+        return {
+          time,
+          value: d.volume,
+          color: d.close >= d.open ? CHART_COLORS.volumeUp : CHART_COLORS.volumeDown,
+        } satisfies HistogramData;
+      })
+      .filter((d): d is HistogramData => d !== null);
 
     candleSeriesRef.current.setData(candleData);
     volumeSeriesRef.current.setData(volumeData);
@@ -147,11 +169,16 @@ export function StockChart({ data }: StockChartProps) {
       }
 
       const lineData: LineData[] = maData.values
-        .filter((v): v is [string, number] => v[1] !== null)
-        .map((v) => ({
-          time: v[0].split('T')[0] as string,
-          value: v[1],
-        }));
+        .map((v) => {
+          if (v[1] === null || !Number.isFinite(v[1])) return null;
+          const time = toChartDate(v[0]);
+          if (!time) return null;
+          return {
+            time,
+            value: v[1],
+          } satisfies LineData;
+        })
+        .filter((v): v is LineData => v !== null);
 
       series.setData(lineData);
     };
