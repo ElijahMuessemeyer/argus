@@ -115,19 +115,25 @@ export function StockDetailPage() {
         {/* MA Distances */}
         {chartData.indicators && (
           <div className="flex flex-wrap gap-2">
-            {chartData.indicators.ma_20w?.distance_percent !== null && (
-              <Badge variant={chartData.indicators.ma_20w.distance_percent! < 0 ? 'bullish' : 'neutral'}>
-                20W MA: {formatPercent(chartData.indicators.ma_20w.distance_percent!)}
+            {chartData.indicators.ma_20w?.distance_percent != null && (
+              <Badge
+                variant={chartData.indicators.ma_20w.distance_percent < 0 ? 'bullish' : 'neutral'}
+              >
+                20W MA: {formatPercent(chartData.indicators.ma_20w.distance_percent)}
               </Badge>
             )}
-            {chartData.indicators.ma_50w?.distance_percent !== null && (
-              <Badge variant={chartData.indicators.ma_50w.distance_percent! < 0 ? 'bullish' : 'neutral'}>
-                50W MA: {formatPercent(chartData.indicators.ma_50w.distance_percent!)}
+            {chartData.indicators.ma_50w?.distance_percent != null && (
+              <Badge
+                variant={chartData.indicators.ma_50w.distance_percent < 0 ? 'bullish' : 'neutral'}
+              >
+                50W MA: {formatPercent(chartData.indicators.ma_50w.distance_percent)}
               </Badge>
             )}
-            {chartData.indicators.ma_200w?.distance_percent !== null && (
-              <Badge variant={chartData.indicators.ma_200w.distance_percent! < 0 ? 'bullish' : 'neutral'}>
-                200W MA: {formatPercent(chartData.indicators.ma_200w.distance_percent!)}
+            {chartData.indicators.ma_200w?.distance_percent != null && (
+              <Badge
+                variant={chartData.indicators.ma_200w.distance_percent < 0 ? 'bullish' : 'neutral'}
+              >
+                200W MA: {formatPercent(chartData.indicators.ma_200w.distance_percent)}
               </Badge>
             )}
           </div>
