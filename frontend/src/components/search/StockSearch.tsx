@@ -6,7 +6,7 @@ import { Spinner } from '../ui/Spinner';
 
 export function StockSearch() {
   const navigate = useNavigate();
-  const { query, setQuery, results, isLoading } = useSearch();
+  const { query, setQuery, results, isLoading, error } = useSearch();
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +71,11 @@ export function StockSearch() {
 
       {isOpen && query.length >= 1 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden z-50">
-          {isLoading ? (
+          {error ? (
+            <div className="px-4 py-3 text-sm text-red-300">
+              Search unavailable. Please try again.
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-4">
               <Spinner size="sm" />
             </div>

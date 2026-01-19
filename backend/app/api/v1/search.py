@@ -66,13 +66,19 @@ async def search_stocks(
     results: list[SearchResult] = []
 
     # First, search in our universe (faster)
-    stmt = select(StockUniverse).where(
-        StockUniverse.is_active == True,
-        (
+    if len(query) == 1:
+        universe_filter = StockUniverse.symbol.ilike(f"{query}%")
+    else:
+        universe_filter = (
             StockUniverse.symbol.ilike(f"%{query}%") |
             StockUniverse.name.ilike(f"%{query}%")
         )
-    ).limit(limit)
+
+    stmt = (
+        select(StockUniverse)
+        .where(StockUniverse.is_active == True, universe_filter)
+        .limit(limit)
+    )
 
     db_result = await db.execute(stmt)
     stocks = db_result.scalars().all()
@@ -87,10 +93,14 @@ async def search_stocks(
         ))
 
     # If we need more results, try external search
-    if len(results) < limit:
+    if len(results) < limit and len(query) >= 2:
         # Check if exact symbol match exists
         if query not in [r.symbol for r in results]:
-            external = await market_data.search_symbols(query, limit - len(results))
+            external = await market_data.search_symbols(
+                query,
+                limit - len(results),
+                timeout_seconds=2.0,
+            )
             for item in external:
                 if item["symbol"] not in [r.symbol for r in results]:
                     results.append(SearchResult(

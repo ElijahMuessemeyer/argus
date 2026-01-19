@@ -14,9 +14,16 @@ export interface SearchResponse {
   total: number;
 }
 
-export async function searchStocks(query: string, limit: number = 10): Promise<SearchResponse> {
+export async function searchStocks(
+  query: string,
+  limit: number = 10,
+  options: { signal?: AbortSignal; timeoutMs?: number } = {}
+): Promise<SearchResponse> {
+  const { signal, timeoutMs = 8000 } = options;
   const response = await apiClient.get<SearchResponse>('/search', {
     params: { q: query, limit },
+    signal,
+    timeout: timeoutMs,
   });
   return response.data;
 }
