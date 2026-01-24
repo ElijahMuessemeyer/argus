@@ -243,7 +243,7 @@ export function StockChart({ data }: StockChartProps) {
       })
       .filter((d): d is AreaData => d !== null);
 
-    const isLongRange = data.period === '2Y' || data.period === '5Y';
+    const isLongRange = data.period === '2Y' || data.period === '5Y' || data.period === 'MAX';
 
     candleSeriesRef.current.setData(candleData);
     volumeSeriesRef.current.setData(volumeData);
@@ -251,6 +251,12 @@ export function StockChart({ data }: StockChartProps) {
 
     candleSeriesRef.current.applyOptions({ visible: !isLongRange });
     areaSeriesRef.current.applyOptions({ visible: isLongRange });
+
+    if (chartRef.current) {
+      chartRef.current.timeScale().applyOptions({
+        minBarSpacing: data.period === 'MAX' ? 0.1 : 0.5,
+      });
+    }
 
     const viewKey = `${data.symbol}-${data.timeframe}-${data.period}`;
     if (chartRef.current && lastViewKeyRef.current !== viewKey) {
