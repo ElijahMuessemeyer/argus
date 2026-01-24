@@ -22,6 +22,7 @@ class Period(str, Enum):
     ONE_YEAR = "1Y"
     TWO_YEARS = "2Y"
     FIVE_YEARS = "5Y"
+    MAX = "MAX"
 
 
 class OHLCV(BaseModel):

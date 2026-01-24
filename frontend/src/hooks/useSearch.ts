@@ -21,11 +21,15 @@ export function useSearch() {
     retry: false,
   });
 
+  const isCanceled =
+    (error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'ERR_CANCELED') ||
+    (error instanceof Error && error.name === 'CanceledError');
+
   return {
     query,
     setQuery,
     results: data?.results || [],
     isLoading: isFetching,
-    error,
+    error: isCanceled ? null : error,
   };
 }
