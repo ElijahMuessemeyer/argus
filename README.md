@@ -1,5 +1,9 @@
 # Argus - Stock Screening Web Application
 
+> **Note:** This project is being retired. Argus 2 is coming soon with a completely redesigned architecture and new features. Stay tuned!
+
+---
+
 A stock screening web application that helps investors identify large-cap US stocks trading near or below key moving averages, with interactive charts and real-time signal tracking.
 
 ## Features
